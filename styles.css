@@ -171,3 +171,15 @@ body:has(dialog[open]) .glass-rim::before{animation-play-state:paused}
  #copy-status:empty{display:none}
  .contact-foot{margin-top:18px;padding-top:6px}
 }
+
+#film-versions{display:flex;gap:6px;margin:0 0 12px}
+#film-versions button{
+ display:grid;align-content:center;gap:2px;min-width:0;min-height:46px;
+ padding:5px 13px;border-radius:13px;border:1px solid #b7dee244;
+ background:#d9f3f409;color:#e6eeee;font-size:13px;line-height:1.15;
+}
+#film-versions button[aria-pressed=true]{color:#fff9ee;background:#b9e8ef24;border-color:#bce6eead}
+#film-versions small{font-size:11px;font-variant-numeric:tabular-nums}
+#cinema.portrait-film #film-versions button{flex:1;padding-inline:5px}
+#cinema.portrait-film #film-versions:not([hidden]) + #player{max-height:clamp(150px,calc(94dvh - 210px),70dvh)}
+@media(max-width:680px){#film-versions button{flex:1;padding-inline:5px}}

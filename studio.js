@@ -1,5 +1,6 @@
 const translations = {
  en: {
+  versions:"Film versions",villaEditions:"Villa film · 3 versions",fullHD:"Full film · HD",shortEdit:"Short edit",guidedTour:"Guided tour",
   work:"Films",studio:"Studio",contact:"Contact",language:"Language",watch:"Our films",selected:"Our films",viewFilm:"Play film",prev:"Previous film",next:"Next film",home:"Back to home",
   scope:"Film production for real estate, architecture & construction.",perdiz:"Architectural concept film",villa:"Villa film",fpv:"FPV walkthrough",development:"Development film",tour:"Guided villa tour",
   studioTitle:"A film for every stage of the build.",about:"Based in Marbella, we organise film production for developers and builders. We plan the shoot around your project, from progress on site to the light in a finished room.",
@@ -8,6 +9,7 @@ const translations = {
   perdizNote:"Benahavís · A studio concept for a fictional hillside residence."
  },
  es: {
+  versions:"Versiones de la película",villaEditions:"Película de villa · 3 versiones",fullHD:"Completa · HD",shortEdit:"Edición corta",guidedTour:"Visita guiada",
   work:"Películas",studio:"Estudio",contact:"Contacto",language:"Idioma",watch:"Nuestras películas",selected:"Nuestras películas",viewFilm:"Ver película",prev:"Película anterior",next:"Película siguiente",home:"Volver al inicio",
   scope:"Producción audiovisual para el sector inmobiliario, la arquitectura y la construcción.",perdiz:"Concepto audiovisual de arquitectura",villa:"Película de villa",fpv:"Recorrido FPV",development:"Película de promoción inmobiliaria",tour:"Visita guiada de la villa",
   studioTitle:"Una película para cada fase de la obra.",about:"Desde Marbella organizamos producciones audiovisuales para promotoras y constructoras. Planificamos cada rodaje en torno al proyecto, desde el avance de la obra hasta la luz de una estancia terminada.",
@@ -16,6 +18,7 @@ const translations = {
   perdizNote:"Benahavís · Concepto del estudio para una residencia ficticia en la ladera."
  },
  ru: {
+  versions:"Версии фильма",villaEditions:"Фильм о вилле · 3 версии",fullHD:"Полный фильм · HD",shortEdit:"Короткий монтаж",guidedTour:"С ведущим",
   work:"Фильмы",studio:"Студия",contact:"Контакт",language:"Язык",watch:"Наши фильмы",selected:"Наши фильмы",viewFilm:"Смотреть фильм",prev:"Предыдущий фильм",next:"Следующий фильм",home:"На главную",
   scope:"Продакшен для недвижимости, архитектуры и строительства.",perdiz:"Архитектурный концепт",villa:"Фильм о вилле",fpv:"FPV-пролёт",development:"Фильм о девелоперском проекте",tour:"Обзор виллы с ведущим",
   studioTitle:"Фильм для каждого этапа стройки.",about:"Мы работаем в Марбелье и организуем съёмки для девелоперов и строительных компаний. Продумываем фильм под ваш объект — от первых работ на площадке до того, как свет ложится в готовом интерьере.",
@@ -29,12 +32,14 @@ const background=byId("intro"), motion=byId("motion"), cinema=byId("cinema"), cr
 const films = [
  {key:"webster", title:"Webster & Co", kind:"villa", time:"00:30", place:"Puente Romano", poster:"films/webster-mountain.jpg"},
  {key:"fpv-villa", title:"FPV Villa 2", kind:"fpv", time:"01:17"},
- {key:"villa-alfa-hd", title:"Villa Alfa", kind:"villa", time:"03:00"},
+ {key:"villa-alfa-hd", title:"Villa Alfa", kind:"villa", time:"03:00",
+  poster:"films/villa-alfa-exterior.jpg", edition:"fullHD", cuts:[
+   {key:"alfa-edit", kind:"villa", time:"00:29", portrait:true, edition:"shortEdit"},
+   {key:"villa-alfa-2", kind:"tour", time:"00:38", portrait:true, edition:"guidedTour"}
+  ]},
  {key:"madronal", title:"Madroñal", kind:"development", time:"00:45", portrait:true},
- {key:"alfa-edit", title:"Villa Alfa · Edit", kind:"villa", time:"00:29", portrait:true},
  {key:"cin-lento", title:"Cin Lento", kind:"villa", time:"00:58", portrait:true},
  {key:"hd-villa", title:"HD Villa", kind:"villa", time:"00:54", poster:"films/hd-villa-mountain.jpg"},
- {key:"villa-alfa-2", title:"Villa Alfa 2", kind:"tour", time:"00:38", portrait:true},
  {key:"perdiz", title:"La Perdiz", kind:"perdiz", time:"00:30", file:"la-perdiz.mp4", poster:"interior.jpg", place:"Benahavís", note:"perdizNote"}
 ];
 const cardTemplate=byId("film-card-template");
@@ -48,7 +53,7 @@ films.forEach(film=>{
  card.querySelector("source").srcset=poster;
  card.querySelector("img").src=film.portrait?"assets/films/"+film.key+"-cover.jpg":poster;
  card.querySelector(".runtime").textContent=film.time;
- card.querySelector("p").dataset.t=film.kind;
+ card.querySelector("p").dataset.t=film.cuts?"villaEditions":film.kind;
  card.querySelector(".place").textContent=film.place||"";
  cardTemplate.before(card);
 });
@@ -71,6 +76,7 @@ function syncControl(){
 function updateLanguage(value){
  language=value; document.documentElement.lang=value; byId("lang").value=value;
  const words=translations[value];
+ versions.setAttribute("aria-label",words.versions);
  document.querySelectorAll("[data-t]").forEach(el=>{el.textContent=words[el.dataset.t]});
  document.querySelectorAll("[data-close]").forEach(el=>el.setAttribute("aria-label",words.close));
  if(activeFilm)byId("film-description").textContent=words[activeFilm.note||activeFilm.kind];
@@ -112,7 +118,7 @@ byId("lang").addEventListener("change",event=>{updateLanguage(event.target.value
 // The native player handles HLS on Safari. Other browsers load the decoder
 // when the gallery is opened, keeping it off the homepage's critical path.
 const nativeHls=Boolean(player.canPlayType("application/vnd.apple.mpegurl"));
-let decoderPromise, stream;
+let decoderPromise, stream, playbackRequest=0;
 function loadDecoder(){
  if(nativeHls||!window.MediaSource)return Promise.resolve(null);
  if(!decoderPromise)decoderPromise=new Promise(resolve=>{
@@ -125,15 +131,18 @@ function loadDecoder(){
  return decoderPromise;
 }
 function stopStream(){
- stream?.destroy();
- stream=null;
+ playbackRequest++;
  player.onerror=null;
+ const oldStream=stream;
+ stream=null;
+ oldStream?.destroy();
 }
 async function startFilm(film){
  const filename=film.file||film.key+".mp4";
  const manifest="assets/stream/"+filename.slice(0,-4)+"/master.m3u8";
  const direct="assets/fallback/"+filename;
- const isCurrent=()=>activeFilm===film&&cinema.open;
+ const request=playbackRequest;
+ const isCurrent=()=>request===playbackRequest&&activeFilm===film&&cinema.open;
  function play(){player.play().catch(()=>{})}
  function fallback(){
   if(!isCurrent())return;
@@ -159,12 +168,42 @@ async function startFilm(film){
  hls.attachMedia(player);
  play();
 }
-function openFilm(key){
- const film=films.find(item=>item.key===key);activeFilm=film;
- byId("film-name").textContent=film.title;byId("film-description").textContent=translations[language][film.note||film.kind];
+const versions=byId("film-versions");
+function selectEdition(film){
+ stopStream();
+ player.pause();
+ activeFilm=film;
+ byId("film-description").textContent=translations[language][film.note||film.kind];
  cinema.classList.toggle("portrait-film",Boolean(film.portrait));
- player.poster="assets/"+(film.poster||"films/"+key+".jpg");
- cinema.showModal();syncBackground();startFilm(film);
+ player.poster="assets/"+(film.poster||"films/"+film.key+".jpg");
+ for(const button of versions.children){
+  button.setAttribute("aria-pressed",String(button.dataset.edition===film.key));
+ }
+ startFilm(film);
+}
+function openFilm(key){
+ const project=films.find(item=>item.key===key);
+ versions.replaceChildren();
+ versions.hidden=!project.cuts;
+ if(project.cuts){
+  for(const film of [project,...project.cuts]){
+   const button=document.createElement("button");
+   button.type="button";
+   button.dataset.edition=film.key;
+   const label=document.createElement("span");
+   label.dataset.t=film.edition;
+   label.textContent=translations[language][film.edition];
+   const duration=document.createElement("small");
+   duration.textContent=film.time;
+   button.append(label,duration);
+   button.addEventListener("click",()=>{if(activeFilm!==film)selectEdition(film)});
+   versions.append(button);
+  }
+ }
+ byId("film-name").textContent=project.title;
+ cinema.showModal();
+ syncBackground();
+ selectEdition(project);
 }
 document.querySelectorAll("[data-film]").forEach(el=>el.addEventListener("click",()=>openFilm(el.dataset.film)));
 byId("credits").addEventListener("click",()=>{credits.showModal();syncBackground()});

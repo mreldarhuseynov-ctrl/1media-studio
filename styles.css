@@ -113,3 +113,61 @@ body:has(dialog[open]) .glass-rim::before{animation-play-state:paused}
 .film-marks button::before{content:"";width:2px;height:8px;border-radius:2px;background:#cfdee487;transition:height .24s,background-color .24s}
 .film-marks button[aria-current]::before{height:19px;background:#efffff;box-shadow:0 0 7px #a9e7fba3}
 @media(max-width:680px){.film-marks{display:none}.pager{gap:12px}}
+
+/* On a phone each film reads as a poster, with its title on the image. */
+@media(max-width:680px) and (orientation:portrait){
+ :root{--edge:clamp(15px,4.8vw,24px)}
+ .header{
+  display:grid;grid-template-columns:minmax(40px,1fr) auto minmax(40px,1fr);
+  gap:4px;top:max(9px,env(safe-area-inset-top));align-items:center;
+ }
+ .header::before{
+  content:"";position:absolute;z-index:-1;pointer-events:none;
+  inset:calc(-1 * max(9px,env(safe-area-inset-top))) calc(-1 * var(--edge)) -12px;
+  background:linear-gradient(#0d202c8c,transparent);
+ }
+ .header nav{position:relative;left:auto;transform:none;gap:0;padding:2px}
+ .header nav a{display:grid;place-items:center;min-height:40px;padding:0 clamp(5px,1.9vw,11px);font-size:13px}
+ .brand,.language select,.motion,.close{min-height:44px;min-width:44px}
+ .brand{justify-self:start}
+ .language{justify-self:end}
+ .hero-bar{bottom:max(20px,calc(env(safe-area-inset-bottom) + 10px))}
+ .watch{min-height:48px;gap:12px}
+ .work{min-height:0;padding-block:clamp(86px,12svh,112px) 38px}
+ .collection-head{margin:0 0 18px}
+ .collection-head h2{font-size:clamp(37px,9.8vw,48px)}
+ .deck{padding-inline:calc(var(--edge) + 5px);gap:9px}
+ .film-card{padding:0;border-radius:29px;overflow:hidden;background:#183038}
+ .frame{aspect-ratio:auto;height:clamp(298px,52svh,490px);border-radius:inherit}
+ .frame::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,#081a2226,transparent 22%,transparent 48%,#07191f38 63%,#07191fe8 100%);
+ }
+ .runtime,.play-film{z-index:1;top:14px;bottom:auto}
+ .runtime{right:14px}
+ .play-film{left:14px;min-height:30px;padding:5px 11px;background-color:#0c202b50}
+ .card-caption{
+  position:absolute;z-index:1;inset:auto 0 0;pointer-events:none;
+  padding:18px clamp(16px,4.6vw,24px) 20px;row-gap:6px;
+ }
+ .card-caption h3{margin:0;font-size:clamp(30px,8.8vw,44px);color:#fff9ee}
+ .card-caption p,.card-caption .place{font-size:13px;color:#fbf7ed}
+ .film-card>.glass-rim{z-index:2;inset:0}
+ .frame:focus-visible{outline-offset:-4px}
+ .pager{margin-top:17px}
+ .info-sheet{padding:12px;gap:0}
+ .studio-img img{height:clamp(140px,41vw,195px);border-radius:22px}
+ .studio-copy{padding:20px 9px 10px}
+ .studio-copy>p:not(.label){font-size:16px;line-height:1.5}
+ .studio ul{margin-top:16px}
+ .studio li{padding-block:8px}
+ .studio,.contact{min-height:0;padding-block:76px 20px}
+ .contact{min-height:100svh;padding-bottom:max(40px,calc(env(safe-area-inset-bottom) + 20px))}
+ .contact-sheet{padding:24px 20px}
+ .contact-links{gap:0}
+ .email,#copy,#credits{display:inline-flex;align-items:center;min-height:44px}
+ .email{gap:8px}
+ #copy,#credits,.contact-foot{font-size:13px}
+ #copy-status:empty{display:none}
+ .contact-foot{margin-top:18px;padding-top:6px}
+}

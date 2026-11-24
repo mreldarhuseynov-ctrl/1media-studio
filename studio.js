@@ -86,8 +86,31 @@ function updateLanguage(value){
  document.querySelectorAll("[data-home]").forEach(el=>el.setAttribute("aria-label",words.home));
  byId("copy-status").textContent="";syncControl();
 }
+let introReady=false, introBufferTimer;
+function finishIntroBuffer(){
+ introReady=true;
+ clearTimeout(introBufferTimer);
+ background.removeEventListener("progress",checkIntroBuffer);
+ background.removeEventListener("canplaythrough",checkIntroBuffer);
+ syncBackground();
+}
+function checkIntroBuffer(){
+ const buffered=background.buffered;
+ if(buffered.length&&buffered.end(0)-background.currentTime>=2)finishIntroBuffer();
+}
 function syncBackground(){
  if(!wantsMotion||document.hidden||!inHero||cinema.open||credits.open){background.pause();return}
+ if(!introReady){
+  if(!introBufferTimer){
+   background.addEventListener("progress",checkIntroBuffer);
+   background.addEventListener("canplaythrough",checkIntroBuffer);
+   // Some mobile browsers fetch media only once play() is called.
+   introBufferTimer=setTimeout(finishIntroBuffer,2600);
+   background.preload="auto";
+   background.load();
+  }
+  return;
+ }
  background.play().catch(err=>{if(err.name==="AbortError")return;wantsMotion=false;syncControl()});
 }
 motion.addEventListener("click",()=>{wantsMotion=!wantsMotion;syncControl();syncBackground()});

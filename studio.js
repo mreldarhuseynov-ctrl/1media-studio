@@ -53,16 +53,9 @@ films.forEach((film,index)=>{
  cardTemplate.before(card);
 });
 function addGlassRim(surface){
- const ns="http://www.w3.org/2000/svg";
- const rim=document.createElementNS(ns,"svg");
+ const rim=document.createElement("span");
+ rim.className="glass-rim";
  rim.setAttribute("aria-hidden","true");
- rim.setAttribute("class","glass-rim");
- for(const layer of ["bloom","trail","glint"]){
-  const edge=document.createElementNS(ns,"rect");
-  edge.setAttribute("class",layer);
-  edge.setAttribute("pathLength","100");
-  rim.append(edge);
- }
  surface.append(rim);
 }
 document.querySelectorAll(".header nav,.watch,.film-card,.info-sheet,.contact-sheet").forEach(addGlassRim);

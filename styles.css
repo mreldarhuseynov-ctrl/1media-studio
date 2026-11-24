@@ -17,29 +17,52 @@ dialog{background:#14232a;color:var(--cream);width:min(94vw,1000px);max-height:9
 
 [data-key="hd-villa"] .frame img{object-position:58% 12%}
 
-/* Light follows the rounded edge of the glass. The softer, longer stroke
-   trails the small bright reflection. Both stay clear of the image. */
-.film-card{--glass-radius:clamp(31px,3.4vw,50px)}
-.info-sheet,.contact-sheet{--glass-radius:32px}
-.header nav{--glass-radius:21px;--rim-time:8s}
-.watch{--glass-radius:25px;--rim-time:8s}
+/* The stationary mask cuts a narrow rim out of one rotating gradient. */
 .watch{position:relative}
 .glass-rim{
- position:absolute;inset:-1px;width:calc(100% + 2px);height:calc(100% + 2px);
- overflow:visible;pointer-events:none;color:#d9f3f4;
+ --rim-width:2px;
+ position:absolute;
+ inset:-1px;
+ border-radius:inherit;
+ padding:var(--rim-width);
+ pointer-events:none;
+ overflow:hidden;
+ container-type:size;
+ -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+ -webkit-mask-composite:xor;
+ mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+ mask-composite:exclude;
 }
-.glass-rim rect{
- x:1px;y:1px;width:calc(100% - 2px);height:calc(100% - 2px);
- rx:var(--glass-radius);ry:var(--glass-radius);
- fill:none;stroke:currentColor;stroke-linecap:round;
- animation:rim-orbit var(--rim-time,6s) linear infinite,rim-rise 4.6s ease-in-out infinite alternate;
+.glass-rim::before{
+ content:"";
+ position:absolute;
+ left:50%;
+ top:50%;
+ width:150cqmax;
+ height:150cqmax;
+ translate:-50% -50%;
+ background:repeating-conic-gradient(
+  from 18deg,
+  #71a9b7a8 0deg,
+  #79b4c2b0 10deg,
+  #a9d6dfd9 27deg,
+  #d4f2f7f5 43deg,
+  #f3ffff 56deg,
+  #f3ffff 61deg,
+  #daf6fbf7 75deg,
+  #acdae3dc 91deg,
+  #83bfcbbe 108deg,
+  #71a9b7a8 120deg
+ );
+ animation:glass-wave var(--wave-period,13s) linear infinite;
+ will-change:transform;
 }
-.glass-rim .bloom{--intensity:.36;filter:blur(1.6px);stroke-width:5;stroke-dasharray:22 78}
-.glass-rim .trail{--intensity:.72;stroke-width:2.4;stroke-dasharray:14 86}
-.glass-rim .glint{--intensity:.94;stroke:#f1ffff;stroke-width:1.4;stroke-dasharray:6 94}
-.header .glass-rim,.watch .glass-rim{opacity:.8}
-.watch .glass-rim rect{animation-delay:-2s}
-@keyframes rim-orbit{to{stroke-dashoffset:100}}
-@keyframes rim-rise{from{opacity:calc(var(--intensity) * .36)}to{opacity:var(--intensity)}}
-body:has(dialog[open]) .glass-rim,.film-card[inert] .glass-rim{display:none}
-@media(prefers-reduced-motion:reduce){.glass-rim{display:none}}
+.film-card,.info-sheet,.contact-sheet{
+ box-shadow:inset 0 0 5px #d2f5ff52,0 0 6px #a4dfec50,0 18px 50px #08131e40;
+}
+.header nav,.watch{--wave-period:16s}
+.header .glass-rim,.watch .glass-rim{--rim-width:1.5px}
+@keyframes glass-wave{to{transform:rotate(1turn)}}
+body:has(dialog[open]) .glass-rim{visibility:hidden}
+body:has(dialog[open]) .glass-rim::before{animation-play-state:paused}
+@media(prefers-reduced-motion:reduce){.glass-rim::before{animation:none;will-change:auto}}

@@ -52,6 +52,20 @@ films.forEach((film,index)=>{
  card.querySelector(".place").textContent=film.place||"";
  cardTemplate.before(card);
 });
+function addGlassRim(surface){
+ const ns="http://www.w3.org/2000/svg";
+ const rim=document.createElementNS(ns,"svg");
+ rim.setAttribute("aria-hidden","true");
+ rim.setAttribute("class","glass-rim");
+ for(const layer of ["bloom","trail","glint"]){
+  const edge=document.createElementNS(ns,"rect");
+  edge.setAttribute("class",layer);
+  edge.setAttribute("pathLength","100");
+  rim.append(edge);
+ }
+ surface.append(rim);
+}
+document.querySelectorAll(".header nav,.watch,.film-card,.info-sheet,.contact-sheet").forEach(addGlassRim);
 byId("position").textContent="01 / "+String(films.length).padStart(2,"0");
 let language="en", activeFilm, inHero=true, wantsMotion=!matchMedia("(prefers-reduced-motion: reduce)").matches;
 try{const saved=localStorage.getItem("1media-language");if(translations[saved])language=saved}catch{}
@@ -80,19 +94,69 @@ motion.addEventListener("click",()=>{wantsMotion=!wantsMotion;syncControl();sync
 document.addEventListener("visibilitychange",syncBackground);
 
 byId("lang").addEventListener("change",event=>{updateLanguage(event.target.value);try{localStorage.setItem("1media-language",language)}catch{}});
+// The native player handles HLS on Safari. Other browsers load the decoder
+// when the gallery is opened, keeping it off the homepage's critical path.
+const nativeHls=Boolean(player.canPlayType("application/vnd.apple.mpegurl"));
+let decoderPromise, stream;
+function loadDecoder(){
+ if(nativeHls||!window.MediaSource)return Promise.resolve(null);
+ if(!decoderPromise)decoderPromise=new Promise(resolve=>{
+  const script=document.createElement("script");
+  script.src="assets/vendor/hls-1.7.4.light.min.js";
+  script.onload=()=>resolve(window.Hls?.isSupported()?window.Hls:null);
+  script.onerror=()=>{decoderPromise=null;resolve(null)};
+  document.head.append(script);
+ });
+ return decoderPromise;
+}
+function stopStream(){
+ stream?.destroy();
+ stream=null;
+ player.onerror=null;
+}
+async function startFilm(film){
+ const filename=film.file||film.key+".mp4";
+ const manifest="assets/stream/"+filename.slice(0,-4)+"/master.m3u8";
+ const direct="assets/fallback/"+filename;
+ const isCurrent=()=>activeFilm===film&&cinema.open;
+ function play(){player.play().catch(()=>{})}
+ function fallback(){
+  if(!isCurrent())return;
+  const time=player.currentTime;
+  stopStream();
+  player.src=direct;
+  if(time>0)player.currentTime=time;
+  play();
+ }
+ if(nativeHls){
+  player.onerror=fallback;
+  player.src=manifest;
+  play();
+  return;
+ }
+ const Hls=await loadDecoder();
+ if(!isCurrent())return;
+ if(!Hls){fallback();return}
+ const hls=new Hls({startLevel:0,capLevelToPlayerSize:true,maxBufferLength:18});
+ stream=hls;
+ hls.on(Hls.Events.ERROR,(_event,data)=>{if(stream===hls&&data.fatal)fallback()});
+ hls.loadSource(manifest);
+ hls.attachMedia(player);
+ play();
+}
 function openFilm(key){
  const film=films.find(item=>item.key===key);activeFilm=film;
  byId("film-name").textContent=film.title;byId("film-description").textContent=translations[language][film.note||film.kind];
  cinema.classList.toggle("portrait-film",Boolean(film.portrait));
- player.poster="assets/"+(film.poster||"films/"+key+".jpg");player.src="assets/"+(film.file||"films/"+key+".mp4");
- cinema.showModal();syncBackground();player.play().catch(()=>{});
+ player.poster="assets/"+(film.poster||"films/"+key+".jpg");
+ cinema.showModal();syncBackground();startFilm(film);
 }
 document.querySelectorAll("[data-film]").forEach(el=>el.addEventListener("click",()=>openFilm(el.dataset.film)));
 byId("credits").addEventListener("click",()=>{credits.showModal();syncBackground()});
 [cinema,credits].forEach(dialog=>{
  dialog.querySelector("[data-close]").addEventListener("click",()=>dialog.close());
  dialog.addEventListener("click",event=>{if(event.target!==dialog)return;const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close()});
- dialog.addEventListener("close",()=>{if(dialog.open)return;if(dialog===cinema){player.pause();player.removeAttribute("src");player.load();activeFilm=null}syncBackground()});
+ dialog.addEventListener("close",()=>{if(dialog.open)return;if(dialog===cinema){activeFilm=null;stopStream();player.pause();player.removeAttribute("src");player.load()}syncBackground()});
 });
 byId("copy").addEventListener("click",async()=>{
  const value=byId("contact").querySelector(".email").href.substring(7);
@@ -108,6 +172,7 @@ function route(){
  const old=currentPanel;currentPanel=target;
  panels.forEach(panel=>{panel.hidden=panel!==target});
  homeBar.hidden=Boolean(target);inHero=!target;
+ if(target===byId("work"))loadDecoder();
  document.querySelectorAll(".header nav a").forEach(a=>{
   if(target&&a.hash==="#"+target.id)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");
  });

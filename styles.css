@@ -16,3 +16,30 @@ dialog{background:#14232a;color:var(--cream);width:min(94vw,1000px);max-height:9
 #cinema.portrait-film #player{aspect-ratio:9/16;object-fit:contain}
 
 [data-key="hd-villa"] .frame img{object-position:58% 12%}
+
+/* Light follows the rounded edge of the glass. The softer, longer stroke
+   trails the small bright reflection. Both stay clear of the image. */
+.film-card{--glass-radius:clamp(31px,3.4vw,50px)}
+.info-sheet,.contact-sheet{--glass-radius:32px}
+.header nav{--glass-radius:21px;--rim-time:8s}
+.watch{--glass-radius:25px;--rim-time:8s}
+.watch{position:relative}
+.glass-rim{
+ position:absolute;inset:-1px;width:calc(100% + 2px);height:calc(100% + 2px);
+ overflow:visible;pointer-events:none;color:#d9f3f4;
+}
+.glass-rim rect{
+ x:1px;y:1px;width:calc(100% - 2px);height:calc(100% - 2px);
+ rx:var(--glass-radius);ry:var(--glass-radius);
+ fill:none;stroke:currentColor;stroke-linecap:round;
+ animation:rim-orbit var(--rim-time,6s) linear infinite,rim-rise 4.6s ease-in-out infinite alternate;
+}
+.glass-rim .bloom{--intensity:.36;filter:blur(1.6px);stroke-width:5;stroke-dasharray:22 78}
+.glass-rim .trail{--intensity:.72;stroke-width:2.4;stroke-dasharray:14 86}
+.glass-rim .glint{--intensity:.94;stroke:#f1ffff;stroke-width:1.4;stroke-dasharray:6 94}
+.header .glass-rim,.watch .glass-rim{opacity:.8}
+.watch .glass-rim rect{animation-delay:-2s}
+@keyframes rim-orbit{to{stroke-dashoffset:100}}
+@keyframes rim-rise{from{opacity:calc(var(--intensity) * .36)}to{opacity:var(--intensity)}}
+body:has(dialog[open]) .glass-rim,.film-card[inert] .glass-rim{display:none}
+@media(prefers-reduced-motion:reduce){.glass-rim{display:none}}

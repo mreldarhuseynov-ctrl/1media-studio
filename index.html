@@ -5,7 +5,7 @@
 <meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#172329">
 <title>1MEDIA — Films for developers &amp; builders</title>
 <meta name="description" content="Marbella production studio for real estate, architecture and construction films.">
-<link rel="icon" href="assets/monogram.svg"><link rel="stylesheet" href="styles.css"><script defer src="studio.js"></script>
+<link rel="icon" href="assets/monogram.svg"><link rel="stylesheet" href="styles.css?v=glass2"><script defer src="studio.js?v=stream2"></script>
 </head>
 <body>
 <a class="skip" href="#work" data-t="work">Work</a>
@@ -17,7 +17,7 @@
 </header>
 <section class="hero" aria-label="1MEDIA">
 <h1 class="sr">1MEDIA — Films for developers &amp; builders</h1>
-<div class="screen"><video id="intro" muted loop playsinline preload="metadata"><source media="(max-aspect-ratio: 6/5)" src="assets/hero-cycle-portrait.mp4"><source src="assets/hero-cycle.mp4"></video></div>
+<div class="screen"><video id="intro" muted loop playsinline preload="none"><source media="(max-aspect-ratio: 6/5)" src="assets/hero-cycle-portrait-web.mp4"><source src="assets/hero-cycle-web.mp4"></video></div>
 
 <div class="hero-bar"><a href="#work" class="watch"><span class="glass play" aria-hidden="true">▤</span><span data-t="watch">Our films</span><span aria-hidden="true">↗</span></a>
 <button class="motion" id="motion" type="button"><span class="motion-icon" aria-hidden="true"></span><span class="sr" id="motion-label">Pause</span></button>
@@ -28,7 +28,7 @@
 <div class="collection-head"><h2 id="work-title" tabindex="-1" data-t="selected">Our films</h2><a class="dismiss" href="#top" data-home aria-label="Back to home">×</a></div>
 <div class="deck" id="deck" aria-live="polite">
 <template id="film-card-template">
-<article class="film-card"><button class="frame"><picture><source media="(max-width:680px)"><img alt=""></picture><span class="runtime"></span><span class="play-film"><span aria-hidden="true">▶</span><span data-t="viewFilm">Play film</span></span></button><div class="card-caption"><div><p></p><h3></h3></div><span class="place"></span></div></article>
+<article class="film-card"><button class="frame"><picture><source media="(max-width:680px)"><img alt="" loading="lazy" decoding="async"></picture><span class="runtime"></span><span class="play-film"><span aria-hidden="true">▶</span><span data-t="viewFilm">Play film</span></span></button><div class="card-caption"><div><p></p><h3></h3></div><span class="place"></span></div></article>
 </template></div>
 <div class="pager"><button id="prev" class="arrow" data-direction="-1">←</button><span id="position"></span><button id="next" class="arrow" data-direction="1">→</button></div>
 </div></section>

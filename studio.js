@@ -38,10 +38,10 @@ const films = [
  {key:"perdiz", title:"La Perdiz", kind:"perdiz", time:"00:30", file:"la-perdiz.mp4", poster:"interior.jpg", place:"Benahavís", note:"perdizNote"}
 ];
 const cardTemplate=byId("film-card-template");
-films.forEach((film,index)=>{
+films.forEach(film=>{
  const card=cardTemplate.content.firstElementChild.cloneNode(true);
  const button=card.querySelector("button"), title=card.querySelector("h3");
- card.hidden=index!==0;card.inert=card.hidden;card.dataset.key=film.key;
+ card.dataset.key=film.key;
  title.id="title-"+film.key; title.textContent=film.title;
  button.dataset.film=film.key;button.setAttribute("aria-labelledby",title.id);
  const poster="assets/"+(film.poster||"films/"+film.key+".jpg");
@@ -58,7 +58,7 @@ function addGlassRim(surface){
  rim.setAttribute("aria-hidden","true");
  surface.append(rim);
 }
-document.querySelectorAll(".header nav,.watch,.film-card,.info-sheet,.contact-sheet").forEach(addGlassRim);
+document.querySelectorAll(".header nav,.watch,.film-card,.info-sheet,.contact-sheet,.pager").forEach(addGlassRim);
 byId("position").textContent="01 / "+String(films.length).padStart(2,"0");
 let language="en", activeFilm, inHero=false, wantsMotion=!matchMedia("(prefers-reduced-motion: reduce)").matches;
 try{const saved=localStorage.getItem("1media-language");if(translations[saved])language=saved}catch{}
@@ -210,34 +210,91 @@ const heroVisibility=new IntersectionObserver(([entry])=>{
  syncBackground();
 },{threshold:[0,.08]});
 heroVisibility.observe(byId("top"));
-const cards=[...document.querySelectorAll(".film-card")];
-let selected=0;
-function changeFilm(step){
- const old=cards[selected];
- selected=(selected+step+cards.length)%cards.length;
- const card=cards[selected];
- cards.forEach(item=>{item.getAnimations().forEach(animation=>animation.cancel());item.hidden=item!==card;item.inert=item!==card;item.style.zIndex=""});
- byId("position").textContent=String(selected+1).padStart(2,"0")+" / "+String(cards.length).padStart(2,"0");
- if(!matchMedia("(prefers-reduced-motion: reduce)").matches){
-  old.hidden=false;old.inert=true;old.style.zIndex="0";card.style.zIndex="1";
-  const exit=old.animate([{opacity:1,transform:"none"},{opacity:0,transform:"translateX("+(-step*9)+"%) scale(.95)"}],{duration:260,easing:"ease-out",fill:"forwards"});
-  exit.onfinish=()=>{if(cards[selected]!==old)old.hidden=true;exit.cancel()};
-  card.animate([{opacity:0,transform:"translateX("+(step*12)+"%) scale(.96)"},{opacity:1,transform:"none"}],{duration:380,easing:"cubic-bezier(.2,.8,.22,1)"});
+const deck=byId("deck");
+const cards=[...deck.querySelectorAll(".film-card")];
+const marks=films.map((film,index)=>{
+ const mark=document.createElement("button");
+ mark.type="button";
+ mark.title=film.title;
+ mark.setAttribute("aria-label",film.title);
+ mark.setAttribute("aria-controls","deck");
+ mark.addEventListener("click",()=>showFilm(index));
+ byId("film-marks").append(mark);
+ return mark;
+});
+marks[0].setAttribute("aria-current","true");
+const rimVisibility=new IntersectionObserver(entries=>{
+ for(const entry of entries)entry.target.classList.toggle("rim-visible",entry.isIntersecting);
+});
+cards.forEach(card=>rimVisibility.observe(card));
+let selected=0, destination=null;
+function syncFilmPosition(){
+ const spacing=cards[1].offsetLeft-cards[0].offsetLeft;
+ const index=Math.max(0,Math.min(cards.length-1,Math.round(deck.scrollLeft/spacing)));
+ if(index!==selected){
+  marks[selected].removeAttribute("aria-current");
+  selected=index;
+  marks[index].setAttribute("aria-current","true");
+  byId("position").textContent=String(index+1).padStart(2,"0")+" / "+String(cards.length).padStart(2,"0");
  }
- if(old.contains(document.activeElement))card.querySelector("button").focus({preventScroll:true});
+ if(index===destination)destination=null;
+}
+deck.addEventListener("scroll",syncFilmPosition,{passive:true});
+new ResizeObserver(syncFilmPosition).observe(deck);
+deck.addEventListener("wheel",()=>{destination=null},{passive:true});
+function showFilm(index,instant=false){
+ destination=index;
+ const card=cards[index];
+ const left=card.offsetLeft-cards[0].offsetLeft;
+ const behavior=instant||matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth";
+ if(deck.contains(document.activeElement))card.querySelector("button").focus({preventScroll:true});
+ deck.scrollTo({left,behavior});
+}
+function changeFilm(step){
+ const from=destination??selected;
+ const next=(from+step+cards.length)%cards.length;
+ showFilm(next,Math.abs(next-from)>1);
 }
 document.querySelectorAll("[data-direction]").forEach(button=>button.addEventListener("click",()=>changeFilm(Number(button.dataset.direction))));
-const deck=byId("deck");let pointerStart=null,suppressClickUntil=0;
-deck.addEventListener("pointerdown",e=>{if(e.isPrimary&&e.button===0)pointerStart={id:e.pointerId,x:e.clientX,y:e.clientY}});
-window.addEventListener("pointerup",e=>{
- if(!pointerStart||e.pointerId!==pointerStart.id)return;
- const dx=e.clientX-pointerStart.x,dy=e.clientY-pointerStart.y;pointerStart=null;
- if(Math.abs(dx)>45&&Math.abs(dx)>1.45*Math.abs(dy)){
-  suppressClickUntil=performance.now()+350;changeFilm(dx<0?1:-1);
- }
+
+// Touch and trackpads use native scrolling. Mouse dragging tracks the pointer.
+let drag=null,ignoreDragClick=false;
+deck.addEventListener("pointerdown",event=>{
+ destination=null;
+ ignoreDragClick=false;
+ if(event.pointerType!=="mouse"||event.button!==0)return;
+ drag={id:event.pointerId,x:event.clientX,y:event.clientY,left:deck.scrollLeft,index:selected,active:false};
 });
-window.addEventListener("pointercancel",()=>{pointerStart=null});
-deck.addEventListener("click",e=>{if(performance.now()<suppressClickUntil){e.preventDefault();e.stopImmediatePropagation()}},true);
+window.addEventListener("pointermove",event=>{
+ if(!drag||event.pointerId!==drag.id)return;
+ const dx=event.clientX-drag.x;
+ if(!drag.active){
+  if(Math.abs(dx)<7||Math.abs(dx)<Math.abs(event.clientY-drag.y))return;
+  drag.active=true;
+  deck.classList.add("dragging");
+  deck.setPointerCapture(event.pointerId);
+ }
+ deck.scrollLeft=drag.left-dx;
+});
+function endDrag(event){
+ if(!drag||event.pointerId!==drag.id)return;
+ const start=drag;
+ drag=null;
+ if(!start.active)return;
+ const dx=event.clientX-start.x;
+ const spacing=cards[1].offsetLeft-cards[0].offsetLeft;
+ let next=Math.round(deck.scrollLeft/spacing);
+ if(event.type==="pointerup"&&next===start.index&&Math.abs(dx)>spacing*.12)next-=Math.sign(dx);
+ ignoreDragClick=true;
+ deck.classList.remove("dragging");
+ if(deck.hasPointerCapture(event.pointerId))deck.releasePointerCapture(event.pointerId);
+ showFilm(Math.max(0,Math.min(cards.length-1,next)));
+}
+window.addEventListener("pointerup",endDrag);
+window.addEventListener("pointercancel",endDrag);
+deck.addEventListener("click",event=>{
+ if(ignoreDragClick&&event.detail>0){event.preventDefault();event.stopImmediatePropagation()}
+},true);
 deck.addEventListener("dragstart",e=>e.preventDefault());
 document.addEventListener("keydown",e=>{
  if(cinema.open||credits.open||e.target.tagName==="SELECT"||e.altKey||e.ctrlKey||e.metaKey)return;

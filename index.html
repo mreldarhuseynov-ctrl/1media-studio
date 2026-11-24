@@ -5,7 +5,7 @@
 <meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#172329">
 <title>1MEDIA — Films for developers &amp; builders</title>
 <meta name="description" content="Marbella production studio for real estate, architecture and construction films.">
-<link rel="icon" href="assets/monogram.svg"><link rel="stylesheet" href="styles.css?v=onepage2"><script defer src="studio.js?v=onepage1"></script>
+<link rel="icon" href="assets/monogram.svg"><link rel="stylesheet" href="styles.css?v=filmstrip2"><script defer src="studio.js?v=filmstrip2"></script>
 </head>
 <body>
 <a class="skip" href="#work" data-t="work">Work</a>
@@ -27,11 +27,11 @@
 <section class="panel work" id="work" aria-labelledby="work-title">
 <div class="collection">
 <div class="collection-head"><h2 id="work-title" tabindex="-1" data-t="selected">Our films</h2></div>
-<div class="deck" id="deck" aria-live="polite">
+<div class="deck" id="deck" role="region" aria-labelledby="work-title">
 <template id="film-card-template">
 <article class="film-card"><button class="frame"><picture><source media="(max-width:680px)"><img alt="" loading="lazy" decoding="async"></picture><span class="runtime"></span><span class="play-film"><span aria-hidden="true">▶</span><span data-t="viewFilm">Play film</span></span></button><div class="card-caption"><div><p></p><h3></h3></div><span class="place"></span></div></article>
 </template></div>
-<div class="pager"><button id="prev" class="arrow" data-direction="-1">←</button><span id="position"></span><button id="next" class="arrow" data-direction="1">→</button></div>
+<div class="pager"><button id="prev" class="arrow" data-direction="-1">←</button><div id="film-marks" class="film-marks"></div><span id="position" aria-live="polite" aria-atomic="true"></span><button id="next" class="arrow" data-direction="1">→</button></div>
 </div></section>
 <section class="panel studio" id="studio" aria-labelledby="studio-title"><div class="info-sheet"><div class="studio-img"><img src="assets/detail.jpg" alt="" loading="lazy"></div><div class="studio-copy"><p class="label" data-t="studio">Studio</p><h2 id="studio-title" data-t="studioTitle">A film for every stage of the build.</h2><p data-t="about">Based in Marbella, we organise film production for developers and builders. We plan the shoot around your project, from progress on site to the light in a finished room.</p><ul><li data-t="s1">Development &amp; launch films</li><li data-t="s2">Construction progress</li><li data-t="s3">Architecture &amp; interiors</li></ul></div></div></section>
 

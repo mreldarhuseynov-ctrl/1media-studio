@@ -60,7 +60,7 @@ function addGlassRim(surface){
 }
 document.querySelectorAll(".header nav,.watch,.film-card,.info-sheet,.contact-sheet").forEach(addGlassRim);
 byId("position").textContent="01 / "+String(films.length).padStart(2,"0");
-let language="en", activeFilm, inHero=true, wantsMotion=!matchMedia("(prefers-reduced-motion: reduce)").matches;
+let language="en", activeFilm, inHero=false, wantsMotion=!matchMedia("(prefers-reduced-motion: reduce)").matches;
 try{const saved=localStorage.getItem("1media-language");if(translations[saved])language=saved}catch{}
 function syncControl(){
  const key=wantsMotion?"pause":"play";
@@ -76,7 +76,6 @@ function updateLanguage(value){
  if(activeFilm)byId("film-description").textContent=words[activeFilm.note||activeFilm.kind];
  byId("prev").setAttribute("aria-label",words.prev);
  byId("next").setAttribute("aria-label",words.next);
- document.querySelectorAll("[data-home]").forEach(el=>el.setAttribute("aria-label",words.home));
  byId("copy-status").textContent="";syncControl();
 }
 let introReady=false, introBufferTimer;
@@ -181,22 +180,36 @@ byId("copy").addEventListener("click",async()=>{
 });
 
 const panels=[...document.querySelectorAll(".panel")];
-const homeBar=document.querySelector(".hero-bar");
+const navigation=[...document.querySelectorAll(".header nav a")];
 let currentPanel=null;
-function route(){
- const target=panels.find(panel=>"#"+panel.id===location.hash)||null;
- const old=currentPanel;currentPanel=target;
- panels.forEach(panel=>{panel.hidden=panel!==target});
- homeBar.hidden=Boolean(target);inHero=!target;
- if(target===byId("work"))loadDecoder();
- document.querySelectorAll(".header nav a").forEach(a=>{
-  if(target&&a.hash==="#"+target.id)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");
- });
- if(target){target.scrollTop=0;const heading=target.querySelector("h2");heading.tabIndex=-1;heading.focus({preventScroll:true})}
- else if(old){document.querySelector(".watch").focus({preventScroll:true})}
- syncBackground();
+let scrollFrame=0;
+function updateSection(){
+ scrollFrame=0;
+ const marker=window.innerHeight*.45;
+ const atBottom=window.scrollY+window.innerHeight>=document.documentElement.scrollHeight-2;
+ let visible=null;
+ for(const panel of panels){
+  if(panel.getBoundingClientRect().top<=marker)visible=panel;
+ }
+ if(atBottom)visible=panels[panels.length-1];
+ if(currentPanel===visible)return;
+ currentPanel=visible;
+ for(const link of navigation){
+  if(visible&&link.hash==="#"+visible.id)link.setAttribute("aria-current","location");
+  else link.removeAttribute("aria-current");
+ }
+ if(visible===byId("work"))loadDecoder();
 }
-window.addEventListener("hashchange",route);
+function queueSectionUpdate(){
+ if(!scrollFrame)scrollFrame=requestAnimationFrame(updateSection);
+}
+window.addEventListener("scroll",queueSectionUpdate,{passive:true});
+window.addEventListener("resize",queueSectionUpdate);
+const heroVisibility=new IntersectionObserver(([entry])=>{
+ inHero=entry.isIntersecting&&entry.intersectionRatio>=.08;
+ syncBackground();
+},{threshold:[0,.08]});
+heroVisibility.observe(byId("top"));
 const cards=[...document.querySelectorAll(".film-card")];
 let selected=0;
 function changeFilm(step){
@@ -219,7 +232,7 @@ deck.addEventListener("pointerdown",e=>{if(e.isPrimary&&e.button===0)pointerStar
 window.addEventListener("pointerup",e=>{
  if(!pointerStart||e.pointerId!==pointerStart.id)return;
  const dx=e.clientX-pointerStart.x,dy=e.clientY-pointerStart.y;pointerStart=null;
- if(currentPanel===byId("work")&&Math.abs(dx)>45&&Math.abs(dx)>1.45*Math.abs(dy)){
+ if(Math.abs(dx)>45&&Math.abs(dx)>1.45*Math.abs(dy)){
   suppressClickUntil=performance.now()+350;changeFilm(dx<0?1:-1);
  }
 });
@@ -228,7 +241,6 @@ deck.addEventListener("click",e=>{if(performance.now()<suppressClickUntil){e.pre
 deck.addEventListener("dragstart",e=>e.preventDefault());
 document.addEventListener("keydown",e=>{
  if(cinema.open||credits.open||e.target.tagName==="SELECT"||e.altKey||e.ctrlKey||e.metaKey)return;
- if(e.key==="Escape"&&currentPanel){location.hash="top";return}
  if(currentPanel===byId("work")&&["ArrowLeft","ArrowRight"].includes(e.key)){e.preventDefault();changeFilm(e.key==="ArrowLeft"?-1:1)}
 });
 const portrait=matchMedia("(max-aspect-ratio: 6/5)");
@@ -238,4 +250,4 @@ portrait.addEventListener("change",()=>{
  background.addEventListener("loadedmetadata",()=>{background.currentTime=Math.min(playhead,background.duration||0);syncBackground()},{once:true});
  background.load();
 });
-setPosters();updateLanguage(language);route();
+setPosters();updateLanguage(language);updateSection();
